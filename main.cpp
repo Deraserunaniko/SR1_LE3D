@@ -16,6 +16,7 @@ enum class Scene {
 
 };
 
+
 Scene scene = Scene::kUnknown;
 
 void ChangeScene() {
