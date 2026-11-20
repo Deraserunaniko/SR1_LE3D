@@ -1,0 +1,98 @@
+#include "GameEnd.h"
+#include "MyMath.h"
+#include <numbers>
+
+using namespace KamataEngine;
+
+GameEnd::~GameEnd() {
+	delete model_;
+	//delete modelPlayer_;
+	delete sprite_;
+	delete fade_;
+}
+
+void GameEnd::Initialize() {
+
+	//model_ = Model::CreateFromOBJ("titleFont");
+	//modelPlayer_ = Model::CreateFromOBJ("player");
+
+	textureHandle_ = TextureManager::Load("titleFont/Clear.png");
+	// スプライト生成
+	sprite_ = Sprite::Create(textureHandle_, { 0, 0});
+	sprite_->SetSize({1280, 720});
+
+	camera_.Initialize();
+
+	worldTransform_.Initialize();
+	worldTransform_.scale_ = {2, 2, 2};
+	worldTransform_.translation_ = {0, 8, 0};
+
+	worldTransformPlayer_.Initialize();
+	worldTransformPlayer_.scale_ = {10, 10, 10};
+	worldTransformPlayer_.translation_ = {0, -8, 0};
+	worldTransformPlayer_.rotation_.y = std::numbers::pi_v<float>;
+
+	fade_ = new Fade();
+	fade_->Initialize();
+
+	fade_->Start(Fade::Status::FadeIn, 1.0f);
+}
+
+void GameEnd::Update() {
+
+	switch (phase_) {
+	case Phase::kMain:
+
+		if (Input::GetInstance()->PushKey(DIK_SPACE)) {
+
+			phase_ = Phase::kFadeOut;
+			fade_->Start(Fade::Status::FadeOut, 1.0f);
+		}
+		break;
+	case Phase::kFadeIn:
+
+		fade_->Update();
+		if (fade_->IsFinished()) {
+			phase_ = Phase::kMain;
+		}
+		break;
+	case Phase::kFadeOut:
+
+		fade_->Update();
+		if (fade_->IsFinished()) {
+			finished_ = true;
+		}
+	}
+
+	worldTransform_.matWorld_ = MakeAffineMatrix(worldTransform_.scale_, worldTransform_.rotation_, worldTransform_.translation_);
+	worldTransform_.TransferMatrix();
+
+	rotate += 0.1f;
+	worldTransformPlayer_.rotation_.y = sin(rotate) + std::numbers::pi_v<float>;
+
+	worldTransformPlayer_.matWorld_ = MakeAffineMatrix(worldTransformPlayer_.scale_, worldTransformPlayer_.rotation_, worldTransformPlayer_.translation_);
+	worldTransformPlayer_.TransferMatrix();
+}
+
+void GameEnd::Draw() {
+
+	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+
+	Model::PreDraw(dxCommon->GetCommandList());
+
+	//model_->Draw(worldTransform_, camera_);
+	//modelPlayer_->Draw(worldTransformPlayer_, camera_);
+
+	Model::PostDraw();
+
+	// スプライト描画
+	Sprite::PreDraw(dxCommon->GetCommandList());
+
+	sprite_->Draw();
+
+	Sprite::PostDraw();
+
+	fade_->Draw();
+
+	
+}
